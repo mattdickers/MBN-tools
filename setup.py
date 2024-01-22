@@ -8,7 +8,7 @@ setup(
   author = 'Matthew Dickers',
   author_email = 'mattdickers@gmail.com',
   url = 'https://github.com/mattdickers/MBN_tools',
-  download_url = 'https://github.com/user/reponame/archive/v_01.tar.gz',
+  download_url = 'https://github.com/mattdickers/MBN_tools/archive/refs/tags/v_0.1.tar.gz',
   keywords = ['MBN Explorer', 'MBN Studio', 'Molecular Dynamics', 'MD', 'Data Analysis'],
   install_requires=[
           'numpy',
