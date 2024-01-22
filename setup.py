@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(
-  name = 'MBN_tools',)
+  name = 'MBN_tools',
   packages = ['MBN_tools'],
   version = '0.1',
   license='MIT',
