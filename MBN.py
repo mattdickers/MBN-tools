@@ -1,6 +1,17 @@
-def runMBN(taskFile, MBN_path, show_output=False):
+'''
+MBN Tools
+
+A series of functions for use with the MBN Explorer software (https://mbnresearch.com/get-mbn-explorer-software).
+
+Functions include running MBN Explorer simulations, data analysis and file manipulation.
+'''
+
+def run_MBN(task_file, MBN_path, show_output=False):
+    '''This function will run an MBN Explorer simulation using a specified Task file. Function returns the
+stanard output and standard error. The show_output optional argument will print the simulation output to
+the screen.'''
     import subprocess
-    result = subprocess.run(MBN_path + ' -t ' + taskFile, capture_output=True, text=True, creationflags=0x08000000)
+    result = subprocess.run(MBN_path + ' -t ' + task_file, capture_output=True, text=True, creationflags=0x08000000)
 
     if show_output:
         print('Output:')
@@ -12,38 +23,36 @@ def runMBN(taskFile, MBN_path, show_output=False):
     return result.stdout, result.stderr
 
 
-
-
-
-def readTaskFile(taskFile):
-    fileOptions = {}
-    with open(taskFile) as f:
+def read_task_file(task_file):
+    '''This function splits a given Task file into a a dictionary of task file options and their respective
+parameters. Useful if you want to get a specific set of task file options for use in calculations for example.'''
+    file_options = {}
+    with open(task_file) as f:
         data = f.read().split('\n')
 
     for i in data:
         if '=' in i:
             i=i.split('=')
             try:
-                fileOptions[i[0].strip()] = eval(i[1].strip())
+                file_options[i[0].strip()] = eval(i[1].strip())
             except (NameError, SyntaxError):
-                fileOptions[i[0].strip()] = i[1].strip()
+                file_options[i[0].strip()] = i[1].strip()
 
-    return fileOptions
-
-
+    return file_options
 
 
-
-
-def readTrajectory(dcdFile, frame=None):
+def read_trajectory(dcd_file, frame=None):
+''' This function uses the mdtraj module to return the coordinates of a particular DCD file.
+A frame number can be specified. Note that this function is only compatible on unix systems
+due to the mdtraj module.'''
     loaded = False
     try:
         import mdtraj.formats as md
         loaded = True
     except:
-        assert loaded, 'Cannot import the mdtraj module; please run in linux'
+        assert loaded, 'Cannot import the mdtraj module; please run in unix'
 
-    with md.DCDTrajectoryFile(dcdFile) as f:
+    with md.DCDTrajectoryFile(dcd_file) as f:
         xyz, cell_lengths, cell_angles = f.read()
         coords = (xyz)
 
