@@ -41,8 +41,14 @@ parameters. Useful if you want to get a specific set of task file options for us
     return file_options
 
 
+def read_xyz_file(xyz_file):
+    with open(xyz_file, 'r') as f:
+        coords = [i.split() for i in f.read().split('\n')[2:-1]]
+    return coords
+
+
 def read_trajectory(dcd_file, frame=None):
-''' This function uses the mdtraj module to return the coordinates of a particular DCD file.
+    '''This function uses the mdtraj module to return the coordinates of a particular DCD file.
 A frame number can be specified. Note that this function is only compatible on unix systems
 due to the mdtraj module.'''
     loaded = False
@@ -117,3 +123,10 @@ be adjusted for other usages provided the string updated_atom is correctly modif
         for line in foot:
             new_pdb.write(line)
 
+
+def xyz_to_in(xyz_file, input_file):
+    coords = read_xyz_file(xyz_file)
+    
+    with open(file.replace('_dcd.xyz', '_MD.in'), 'w') as f:
+        for i, atom in enumerate(atoms):
+            f.write(atom+':'+masses[atom]+'\t\t\t'+'{:.8e}'.format(coords[i][0])+'\t\t'+'{:.8e}'.format(coords[i][1])+'\t\t'+'{:.8e}'.format(coords[i][2])+'\n')
