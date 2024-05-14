@@ -6,6 +6,8 @@ A series of functions for use with the MBN Explorer software (https://mbnresearc
 Functions include running MBN Explorer simulations, data analysis and file manipulation.
 '''
 
+import numpy as np
+
 def run_MBN(task_file, MBN_path, show_output=False):
     '''This function will run an MBN Explorer simulation using a specified Task file. Function returns the
 stanard output and standard error. The show_output optional argument will print the simulation output to
@@ -23,34 +25,70 @@ the screen.'''
     return result.stdout, result.stderr
 
 
-def read_task_file(task_file):
+def read_task(task_file, flatten=False):
     '''This function splits a given Task file into a a dictionary of task file options and their respective
-parameters. Useful if you want to get a specific set of task file options for use in calculations for example.'''
+parameters. Useful if you want to get a specific set of task file options for use in calculations for example.
+by default it is split into the task file subsections as a dictionary of dictionaries. Use flatten=True to flatten
+into a single dictionary.'''
     file_options = {}
     with open(task_file) as f:
         data = f.read().split('\n')
+    
+    section_options = {}
+    for line in data:
+        try:
+            if line[0] ==';' and len(line)>1:
+                if len(section_options)>0:
+                    file_options[section] = section_options
+                    section_options = {}
+                section = line.replace(';','').strip()
+            if '=' in line:
+                line=line.split('=')
+                section_options[line[0].strip()] = str(line[1].strip())
+        except IndexError:
+            pass
+    file_options[section] = section_options
+    
+    if flatten:
+        file_options_flat = {}
+        for key in file_options.keys():
+            file_options_flat.update(file_options[key])
+        return file_options_flat
+    else:
+        return file_options
+    
 
-    for i in data:
-        if '=' in i:
-            i=i.split('=')
-            try:
-                file_options[i[0].strip()] = eval(i[1].strip())
-            except (NameError, SyntaxError):
-                file_options[i[0].strip()] = i[1].strip()
+def write_task(task_file, file_options):
+    '''This function writes the contents nested dictionary containing task file options to a task file.
+The input format is the same as a non-flattened read_task output dictionary.'''
+    with open(task_file, 'w') as f:
+        f.write(';\n')
+        for key in file_options:
+            f.write('\n; '+key+'\n')
+            for sub_key in file_options[key]:
+                if sub_key == 'Random':
+                    f.write('\n'+'{:<31}'.format(sub_key)+'= '+file_options[key][sub_key]+'\n')
+                else:
+                    f.write('{:<31}'.format(sub_key)+'= '+file_options[key][sub_key]+'\n')
 
-    return file_options
 
-
-def read_xyz_file(xyz_file):
+def read_xyz(xyz_file):
+    '''This function returns the contents of an xyz file as a list.'''
     with open(xyz_file, 'r') as f:
         coords = [i.split() for i in f.read().split('\n')[2:-1]]
+    
+    for i in range(len(coords)):
+        coords[i][1] = float(coords[i][1])
+        coords[i][2] = float(coords[i][2])
+        coords[i][3] = float(coords[i][3])
+    
     return coords
 
 
-def read_trajectory(dcd_file, frame=None):
+def read_trajectory(dcd_file, frame=None):#, include_atoms=False):
     '''This function uses the mdtraj module to return the coordinates of a particular DCD file.
-A frame number can be specified. Note that this function is only compatible on unix systems
-due to the mdtraj module.'''
+A frame number can be specified. Whether to include the atoms labels can be specified.
+Note that this function is only compatible on unix systems due to the mdtraj module.'''
     loaded = False
     try:
         import mdtraj.formats as md
@@ -61,6 +99,14 @@ due to the mdtraj module.'''
     with md.DCDTrajectoryFile(dcd_file) as f:
         xyz, cell_lengths, cell_angles = f.read()
         coords = (xyz)
+    
+##    if include_atoms:
+##        atoms = [i[0] for i in read_xyz(dcd_file.replace('.dcd', '_dcd.xyz'))]
+##        
+##        for frame_coords in coords:
+##            for i, coord in enumerate(frame_coords):
+##                np.insert(coord, 0, atoms[i])
+##            #print(i, frame_coords)
 
     if frame:
         return coords[frame]
@@ -124,9 +170,16 @@ be adjusted for other usages provided the string updated_atom is correctly modif
             new_pdb.write(line)
 
 
-def xyz_to_in(xyz_file, input_file):
-    coords = read_xyz_file(xyz_file)
+def xyz_to_input(xyz, input_file, charge=None):
+    '''This function converts an xyz file to an MBN explorer input file. xyz can either be a filename or a list
+containing the atom type, and x, y, and z coordinates. Charge of the atom can be specified. This will be converted
+to a dictionary in the future.'''
+    if type(xyz) == str:
+        coords = read_xyz(xyz)
+    elif type(xyz) == list:
+        coords = xyz
     
-    with open(file.replace('_dcd.xyz', '_MD.in'), 'w') as f:
-        for i, atom in enumerate(atoms):
-            f.write(atom+':'+masses[atom]+'\t\t\t'+'{:.8e}'.format(coords[i][0])+'\t\t'+'{:.8e}'.format(coords[i][1])+'\t\t'+'{:.8e}'.format(coords[i][2])+'\n')
+    with open(input_file, 'w') as f:
+        for coord in coords:
+            f.write(str(coord[0])+(':'+charge if charge else '')+'\t\t\t'+'{:.8e}'.format(coord[1])+'\t\t'+'{:.8e}'.format(coord[2])+'\t\t'+'{:.8e}'.format(coord[3])+'\n')
+#TODO: Add dictionary of charges
