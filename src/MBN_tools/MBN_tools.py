@@ -72,17 +72,52 @@ The input format is the same as a non-flattened read_task output dictionary.'''
                     f.write('{:<31}'.format(sub_key)+'= '+file_options[key][sub_key]+'\n')
 
 
-def read_xyz(xyz_file):
-    '''This function returns the contents of an xyz file as a list.'''
+def read_xyz(xyz_file, skip_atoms=False, flatten=False):
+    '''This function returns the contents of an xyz file as a list. skip_atoms excludes the atom labels 
+from the list. Useful if you just want the raw coordinates but do not care about atom type. Flatten will
+flatten the nested list into a single list of atom and coordinates of the form [['Atom', 'x', 'y', 'z'], ...].'''
     with open(xyz_file, 'r') as f:
         coords = [i.split() for i in f.read().split('\n')[2:-1]]
     
-    for i in range(len(coords)):
-        coords[i][1] = float(coords[i][1])
-        coords[i][2] = float(coords[i][2])
-        coords[i][3] = float(coords[i][3])
+    if skip_atoms:
+        for i in range(len(coords)):
+            del coords[i][0]
+            coords[i][0] = float(coords[i][0])
+            coords[i][1] = float(coords[i][1])
+            coords[i][2] = float(coords[i][2])
+    else:
+        new_coords = []
+        for i in range(len(coords)):
+            if flatten:
+                new_coords.append([coords[i][0], float(coords[i][1]), float(coords[i][2]), float(coords[i][3])])
+            else:
+                new_coords.append([coords[i][0], [float(coords[i][1]), float(coords[i][2]), float(coords[i][3])]])
+        coords = new_coords
     
     return coords
+
+
+def write_xyz(coords, xyz_file, atoms=None):
+    '''This function writes an xyz file from a list of coordinates. Optional atoms argument
+defines a seperate list of atoms if coords containes only xyz coordinates and no atom labels.'''
+    if atoms:
+        try:
+            coords = coords.tolist()
+        except AttributeError: pass
+        coords_new = []
+        for i, atom in enumerate(atoms):
+            combine = [atom, coords[i]]
+            coords_new.append(combine)
+        coords = coords_new
+    
+    with open(xyz_file, 'w') as f:
+        f.write(str(len(coords))+'\n')
+        f.write('Type name\t\t\tPosition X\t\t\tPosition Y\t\t\tPosition Z\n')
+        for coord in coords:
+            if len(coord)>2: #Check if the list has been flattened and if so, unflatten.
+                coord = [coord[0], [coord[1], coord[2], coord[3]]]
+            atom = coord[0]
+            f.write(atom+'\t\t\t\t'+'\t\t'.join(['{:.8e}'.format(float(x)) for x in coord[1:][0]])+'\n')
 
 
 def read_trajectory(dcd_file, frame=None):#, include_atoms=False):
