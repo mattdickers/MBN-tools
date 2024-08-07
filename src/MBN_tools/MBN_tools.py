@@ -43,7 +43,7 @@ into a single dictionary.'''
                     section_options = {}
                 section = line.replace(';','').strip()
             if '=' in line:
-                line=line.split('=')
+                line=line.split(' = ')
                 section_options[line[0].strip()] = str(line[1].strip())
         except IndexError:
             pass
@@ -205,7 +205,7 @@ be adjusted for other usages provided the string updated_atom is correctly modif
             new_pdb.write(line)
 
 
-def xyz_to_input(xyz, input_file, charge=None):
+def xyz_to_input(xyz, input_file, charge=None, fixed=None):
     '''This function converts an xyz file to an MBN explorer input file. xyz can either be a filename or a list
 containing the atom type, and x, y, and z coordinates. Charge of the atom can be specified. This will be converted
 to a dictionary in the future.'''
@@ -215,6 +215,43 @@ to a dictionary in the future.'''
         coords = xyz
     
     with open(input_file, 'w') as f:
-        for coord in coords:
-            f.write(str(coord[0])+(':'+charge if charge else '')+'\t\t\t'+'{:.8e}'.format(coord[1])+'\t\t'+'{:.8e}'.format(coord[2])+'\t\t'+'{:.8e}'.format(coord[3])+'\n')
+        for i, coord in enumerate(coords):
+            if i==fixed:
+                f.write('<*\n')
+            f.write(str(coord[0])+(':'+charge if charge else '')+'\t\t\t'+'{:.8e}'.format(coord[1][0])+'\t\t'+'{:.8e}'.format(coord[1][1])+'\t\t'+'{:.8e}'.format(coord[1][2])+'\n')
+        if fixed:
+            f.write('>')
 #TODO: Add dictionary of charges
+#TODO: Change fixed to be lists. First item is start index, second is end index. Also list of lists. Single length list corresponds to fixed block after given index to end of file
+
+
+def melting_temperature_calculation():
+    pass
+
+
+def rdf_calculaton():
+    pass
+
+
+def rmsd_analysis():
+    pass
+
+
+def diffusion_analysis():
+    pass
+
+
+def kinetic_energy_distribution():
+    pass
+
+
+def temperatur_fluctuation_calculation():
+    pass
+
+
+def heat_capacity_calculation():
+    pass
+
+
+def spectral_statistics_analyser():
+    pass
