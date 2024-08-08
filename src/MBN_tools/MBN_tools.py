@@ -7,6 +7,7 @@ Functions include running MBN Explorer simulations, data analysis and file manip
 '''
 
 import numpy as np
+from scipy.spatial import KDTree
 
 def run_MBN(task_file, MBN_path, show_output=False):
     '''This function will run an MBN Explorer simulation using a specified Task file. Function returns the
@@ -229,8 +230,53 @@ def melting_temperature_calculation():
     pass
 
 
-def rdf_calculaton():
-    pass
+def calculate_rdf(coordinates, step, r_max, box_size=None, select_atoms=None):
+    if box_size is None:
+        # Calculate box dimensions from given coors
+        mins = np.min(np.array([i[1] for i in coordinates]), axis=0)
+        maxs = np.max(np.array([i[1] for i in coordinates]), axis=0)
+        box_size = maxs - mins
+
+    if select_atoms:
+        # Reduce coordinates to selection of atom types
+        coordinates_reduced = []
+        for i, atom in enumerate(coordinates):
+            if atom[0] == select_atoms:
+                coordinates_reduced.append(atom)
+        coordinates = coordinates_reduced
+    coordinates = np.array([i[1] for i in coordinates])
+
+    num_atoms = len(coordinates)
+    num_bins = int(r_max / step)
+    
+    rdf = np.zeros(num_bins)
+    
+    # Apply PBC for coordinates
+    pbc_coordinates = coordinates % box_size
+    
+    # Create KD-tree
+    tree = KDTree(pbc_coordinates)
+    
+    # Average density rho for cuboidal box
+    box_volume = np.prod(box_size)
+    density = num_atoms / box_volume
+    
+    # Find pairs within max_distance using KD-tree
+    pairs = tree.query_pairs(r=r_max, output_type='ndarray')
+    
+    # Calculate distances and bin them
+    distances = np.linalg.norm(pbc_coordinates[pairs[:, 0]] - pbc_coordinates[pairs[:, 1]], axis=1)
+    hist, bin_edges = np.histogram(distances, bins=num_bins, range=(0, r_max))
+    
+    r_values = (bin_edges[:-1] + bin_edges[1:]) / 2  # Mid points of bins
+    
+    # Convert histogram to RDF
+    for i_bin in range(num_bins):
+        r = r_values[i_bin]
+        shell_volume = 4 * np.pi * r**2 * step
+        rdf[i_bin] = hist[i_bin] / (shell_volume * density * num_atoms)
+
+    return r_values, rdf
 
 
 def rmsd_analysis():
