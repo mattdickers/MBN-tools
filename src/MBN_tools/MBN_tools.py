@@ -9,6 +9,31 @@ Functions include running MBN Explorer simulations, data analysis and file manip
 import numpy as np
 from scipy.spatial import KDTree
 
+def create_structured_array(atoms, frames):
+    """
+    Create a single 3D structured numpy array from a list of atom types and a nested list/array of coordinates for multiple frames.
+    
+    Parameters:
+        atoms (list of str): A list of atom type labels.
+        frames (numpy array or list): A list or array of 3D coordinates for multiple frames 
+                                      (shape: MxNx3, where M is the number of frames, and N is the number of atoms).
+        
+    Returns:
+        numpy.ndarray: A 3D structured array with 'atoms' and 'coordinates' fields, one for each frame.
+    """
+    
+    frames = np.array(frames)
+    
+    dtype = [('atoms', 'U10'), ('coordinates', 'f8', 3)]
+    
+    structured_array = np.array(
+        [[(atom, coord) for atom, coord in zip(atoms, frame)] for frame in frames],
+        dtype=dtype
+    )
+    
+    return structured_array
+
+
 def run_MBN(task_file, MBN_path, show_output=False):
     '''This function will run an MBN Explorer simulation using a specified Task file. Function returns the
 stanard output and standard error. The show_output optional argument will print the simulation output to
@@ -73,76 +98,41 @@ The input format is the same as a non-flattened read_task output dictionary.'''
                     f.write('{:<31}'.format(sub_key)+'= '+file_options[key][sub_key]+'\n')
 
 
-def read_xyz(xyz_file, skip_atoms=False, flatten=False):
-    '''This function returns the contents of an xyz file as a list. skip_atoms excludes the atom labels 
-from the list. Useful if you just want the raw coordinates but do not care about atom type. Flatten will
-flatten the nested list into a single list of atom and coordinates of the form [['Atom', 'x', 'y', 'z'], ...].'''
+def read_xyz(xyz_file):
+    '''This function returns the contents of an xyz file as a strucutred array.'''
     with open(xyz_file, 'r') as f:
-        coords = [i.split() for i in f.read().split('\n')[2:-1]]
-    
-    if skip_atoms:
-        for i in range(len(coords)):
-            del coords[i][0]
-            coords[i][0] = float(coords[i][0])
-            coords[i][1] = float(coords[i][1])
-            coords[i][2] = float(coords[i][2])
-    else:
-        new_coords = []
-        for i in range(len(coords)):
-            if flatten:
-                new_coords.append([coords[i][0], float(coords[i][1]), float(coords[i][2]), float(coords[i][3])])
-            else:
-                new_coords.append([coords[i][0], [float(coords[i][1]), float(coords[i][2]), float(coords[i][3])]])
-        coords = new_coords
-    
-    return coords
+        data = [i.split() for i in f.read().split('\n')[2:-1]]
+        atoms = [i[0] for i in data]
+        coordinates = [[[float(i[1]), float(i[2]), float(i[3])] for i in data]]
+
+    xyz_data = create_structured_array(atoms, coordinates)
+
+    return xyz_data
 
 
-def write_xyz(coords, xyz_file, atoms=None):
-    '''This function writes an xyz file from a list of coordinates. Optional atoms argument
-defines a seperate list of atoms if coords containes only xyz coordinates and no atom labels.'''
-    if atoms:
-        try:
-            coords = coords.tolist()
-        except AttributeError: pass
-        coords_new = []
-        for i, atom in enumerate(atoms):
-            combine = [atom, coords[i]]
-            coords_new.append(combine)
-        coords = coords_new
-    
+def write_xyz(coords, xyz_file, frame=0):
+    '''This function writes an xyz file from a strucutred array of coordinates. Frame argument defines
+the simulation frame to use of multiple are specified. Defaults to the first frame.'''
     with open(xyz_file, 'w') as f:
-        f.write(str(len(coords))+'\n')
+        f.write(str(len(coords[frame]))+'\n')
         f.write('Type name\t\t\tPosition X\t\t\tPosition Y\t\t\tPosition Z\n')
-        for coord in coords:
-            if len(coord)>2: #Check if the list has been flattened and if so, unflatten.
-                coord = [coord[0], [coord[1], coord[2], coord[3]]]
-            atom = coord[0]
-            f.write(atom+'\t\t\t\t'+'\t\t'.join(['{:.8e}'.format(float(x)) for x in coord[1:][0]])+'\n')
+        for line in coords[frame]:
+            f.write(line['atoms']+'\t\t\t\t'+'\t\t'.join(['{:.8e}'.format(float(x)) for x in line['coordinates']])+'\n')
 
 
-def read_trajectory(dcd_file, frame=None):#, include_atoms=False):
+def read_trajectory(dcd_file, xyz_file, frame=None):
     '''This function uses the mdtraj module to return the coordinates of a particular DCD file.
 A frame number can be specified. Whether to include the atoms labels can be specified.
 Note that this function is only compatible on unix systems due to the mdtraj module.'''
-    loaded = False
-    try:
-        import mdtraj.formats as md
-        loaded = True
-    except:
-        assert loaded, 'Cannot import the mdtraj module; please run in unix'
-
+    import mdtraj.formats as md
+    
     with md.DCDTrajectoryFile(dcd_file) as f:
         xyz, cell_lengths, cell_angles = f.read()
-        coords = (xyz)
-    
-##    if include_atoms:
-##        atoms = [i[0] for i in read_xyz(dcd_file.replace('.dcd', '_dcd.xyz'))]
-##        
-##        for frame_coords in coords:
-##            for i, coord in enumerate(frame_coords):
-##                np.insert(coord, 0, atoms[i])
-##            #print(i, frame_coords)
+        #coords = (xyz)
+
+    atoms = read_xyz(xyz_file)[0]['atoms']
+
+    coords = create_structured_array(atoms, (xyz))
 
     if frame:
         return coords[frame]
@@ -204,22 +194,23 @@ be adjusted for other usages provided the string updated_atom is correctly modif
             new_pdb.write(updated_atom)
         for line in foot:
             new_pdb.write(line)
+#TODO: Switch to new strucutred array method
 
 
-def xyz_to_input(xyz, input_file, charge=None, fixed=None):
+def xyz_to_input(xyz, input_file, charge=None, fixed=None, frame=0):
     '''This function converts an xyz file to an MBN explorer input file. xyz can either be a filename or a list
 containing the atom type, and x, y, and z coordinates. Charge of the atom can be specified. This will be converted
 to a dictionary in the future.'''
     if type(xyz) == str:
-        coords = read_xyz(xyz)
-    elif type(xyz) == list:
-        coords = xyz
+        coords = read_xyz(xyz)[0]
+    elif type(xyz) == np.ndarray:
+        coords = xyz[0]
     
     with open(input_file, 'w') as f:
-        for i, coord in enumerate(coords):
+        for i, line in enumerate(coords):
             if i==fixed:
                 f.write('<*\n')
-            f.write(str(coord[0])+(':'+charge if charge else '')+'\t\t\t'+'{:.8e}'.format(coord[1][0])+'\t\t'+'{:.8e}'.format(coord[1][1])+'\t\t'+'{:.8e}'.format(coord[1][2])+'\n')
+            f.write(line['atoms']+(':'+charge if charge else '')+'\t\t\t'+'\t\t'.join(['{:.8e}'.format(float(x)) for x in line['coordinates']])+'\n')
         if fixed:
             f.write('>')
 #TODO: Add dictionary of charges
