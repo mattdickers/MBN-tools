@@ -1,23 +1,24 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
+
 setup(
-  name = 'MBN_tools',
-  packages = ['MBN_tools'],
-  version = '0.1',
-  license='MIT',
-  description = 'Useful tools for MBN Explorer simulations and analysis',
-  author = 'Matthew Dickers',
-  author_email = 'mattdickers@gmail.com',
-  url = 'https://github.com/mattdickers/MBN_tools',
-  download_url = 'https://github.com/mattdickers/MBN_tools/archive/refs/tags/v_0.1.tar.gz',
-  keywords = ['MBN Explorer', 'MBN Studio', 'Molecular Dynamics', 'MD', 'Data Analysis'],
-  install_requires=[
+    name="MBN-tools",
+    version="1.0.0",
+    author="Matthew Dickers",
+    author_email="mattdickers@gmail.com",
+    description="Useful tools for use with MBN Explorer simulations, files, and their analysis",
+    long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/mattdickers/MBN-tools",
+    packages=find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.6',
+    install_requires=[
           'numpy',
           'mdtraj',
+          'scipy'
       ],
-  classifiers=[
-    'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
-    'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python :: 3',
-  ],
 )
