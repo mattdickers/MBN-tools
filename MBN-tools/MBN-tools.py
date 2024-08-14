@@ -8,6 +8,8 @@ Functions include running MBN Explorer simulations, data analysis and file manip
 
 import numpy as np
 from scipy.spatial import KDTree
+import warnings
+
 
 def create_structured_array(atoms, frames):
     """
@@ -221,21 +223,20 @@ def melting_temperature_calculation():
     pass
 
 
-def calculate_rdf(coordinates, step, r_max, box_size=None, select_atoms=None):
+def calculate_rdf(coordinates, step, r_max, frame=0, box_size=None, select_atoms=None):
+    coordinates = coordinates[frame]
     if box_size is None:
         # Calculate box dimensions from given coors
-        mins = np.min(np.array([i[1] for i in coordinates]), axis=0)
-        maxs = np.max(np.array([i[1] for i in coordinates]), axis=0)
+        mins = np.min(coordinates['coordinates'], axis=0)
+        maxs = np.max(coordinates['coordinates'], axis=0)
         box_size = maxs - mins
+        warnings.warn('Using calculated box size. This is unadvisable and may produce incorrect results. For best results define a box size manually.')
 
     if select_atoms:
         # Reduce coordinates to selection of atom types
-        coordinates_reduced = []
-        for i, atom in enumerate(coordinates):
-            if atom[0] == select_atoms:
-                coordinates_reduced.append(atom)
-        coordinates = coordinates_reduced
-    coordinates = np.array([i[1] for i in coordinates])
+        coordinates = coordinates[np.where(coordinates['atoms'] == select_atoms)]
+        if len(coordinates) == 0:
+            raise ValueError('No atoms of the selected type.')
 
     num_atoms = len(coordinates)
     num_bins = int(r_max / step)
@@ -243,7 +244,7 @@ def calculate_rdf(coordinates, step, r_max, box_size=None, select_atoms=None):
     rdf = np.zeros(num_bins)
     
     # Apply PBC for coordinates
-    pbc_coordinates = coordinates % box_size
+    pbc_coordinates = coordinates['coordinates'] % box_size
     
     # Create KD-tree
     tree = KDTree(pbc_coordinates)
