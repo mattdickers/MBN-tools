@@ -1,17 +1,35 @@
-'''
+"""
 MBN Tools
 
-A series of functions for use with the MBN Explorer software (https://mbnresearch.com/get-mbn-explorer-software).
+A collection of functions for use with the MBN Explorer software (https://mbnresearch.com/get-mbn-explorer-software).
 
-Functions include running MBN Explorer simulations, data analysis and file manipulation.
-'''
+This module includes functions for:
+- Running MBN Explorer simulations.
+- File manipulation.
+- Data analysis.
+
+Dependencies:
+- numpy
+- scipy
+- mdtraj
+- subprocess
+
+Example:
+    from mbn_tools import run_MBN, read_xyz
+
+    # Run MBN Explorer simulation
+    stdout, stderr = run_MBN('task_file.task', '/path/to/MBN_Explorer')
+
+    # Read XYZ file
+    xyz_data = read_xyz('xyz_file.xyz')
+"""
 
 import numpy as np
-from scipy.spatial import KDTree
 import warnings
+from typing import Union, Optional, List, Dict, Tuple
 
 
-def create_structured_array(atoms, frames):
+def create_structured_array(atoms: List[str], frames: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
     """
     Create a single 3D structured numpy array from a list of atom types and a nested list/array of coordinates for multiple frames.
     
@@ -36,10 +54,19 @@ def create_structured_array(atoms, frames):
     return structured_array
 
 
-def run_MBN(task_file, MBN_path, show_output=False):
-    '''This function will run an MBN Explorer simulation using a specified Task file. Function returns the
-stanard output and standard error. The show_output optional argument will print the simulation output to
-the screen.'''
+def run_MBN(task_file: str, MBN_path: str, show_output: bool = False) -> Tuple[str, str]:
+    """
+    Run an MBN Explorer simulation using a specified Task file and return the standard output and error.
+
+    Parameters:
+        task_file (str): Path to the Task file.
+        MBN_path (str): Path to the MBN Explorer executable.
+        show_output (bool, optional): If True, prints the simulation output to the screen. Default is False.
+
+    Returns:
+        tuple: (stdout, stderr) where stdout and stderr are strings containing the standard output and error of the simulation.
+    """
+        
     import subprocess
     result = subprocess.run(MBN_path + ' -t ' + task_file, capture_output=True, text=True, creationflags=0x08000000)
 
@@ -53,11 +80,18 @@ the screen.'''
     return result.stdout, result.stderr
 
 
-def read_task(task_file, flatten=False):
-    '''This function splits a given Task file into a a dictionary of task file options and their respective
-parameters. Useful if you want to get a specific set of task file options for use in calculations for example.
-by default it is split into the task file subsections as a dictionary of dictionaries. Use flatten=True to flatten
-into a single dictionary.'''
+def read_task(task_file: str, flatten: bool = False) -> Dict[str, Dict[str, str]]:
+    """
+    Read a Task file and split it into a dictionary of options and their parameters.
+
+    Parameters:
+        task_file (str): Path to the Task file.
+        flatten (bool, optional): If True, flattens the nested dictionary into a single dictionary. Default is False.
+
+    Returns:
+        dict: A dictionary of Task file options. If flatten=True, a flattened dictionary ignoring Task file sections.
+    """
+    
     file_options = {}
     with open(task_file) as f:
         data = f.read().split('\n')
@@ -86,9 +120,18 @@ into a single dictionary.'''
         return file_options
     
 
-def write_task(task_file, file_options):
-    '''This function writes the contents nested dictionary containing task file options to a task file.
-The input format is the same as a non-flattened read_task output dictionary.'''
+def write_task(task_file: str, file_options: Dict[str, Dict[str, str]]) -> None:
+    """
+    Write a dictionary of Task file options to a Task file.
+
+    Parameters:
+        task_file (str): Path to the Task file.
+        file_options (dict): A dictionary of Task file options, where the keys are section headers and the values are dictionaries of parameters.
+    
+    Returns:
+        None: Writes the Task file.
+    """
+    
     with open(task_file, 'w') as f:
         f.write(';\n')
         for key in file_options:
@@ -100,8 +143,17 @@ The input format is the same as a non-flattened read_task output dictionary.'''
                     f.write('{:<31}'.format(sub_key)+'= '+file_options[key][sub_key]+'\n')
 
 
-def read_xyz(xyz_file):
-    '''This function returns the contents of an xyz file as a strucutred array.'''
+def read_xyz(xyz_file: str) -> np.ndarray:
+    """
+    Read an XYZ file and return its contents as a structured array.
+
+    Parameters:
+        xyz_file (str): Path to the XYZ file.
+
+    Returns:
+        numpy.ndarray: A structured array with fields 'atoms' and 'coordinates'.
+    """
+    
     with open(xyz_file, 'r') as f:
         data = [i.split() for i in f.read().split('\n')[2:-1]]
         atoms = [i[0] for i in data]
@@ -112,9 +164,19 @@ def read_xyz(xyz_file):
     return xyz_data
 
 
-def write_xyz(coords, xyz_file, frame=0):
-    '''This function writes an xyz file from a strucutred array of coordinates. Frame argument defines
-the simulation frame to use of multiple are specified. Defaults to the first frame.'''
+def write_xyz(coords: np.ndarray, xyz_file: str, frame: int = 0) -> None:
+    """
+    Write coordinates to an XYZ file from a structured array.
+
+    Parameters:
+        coords (numpy.ndarray): A structured array of coordinates.
+        xyz_file (str): Path to the XYZ file.
+        frame (int, optional): The simulation frame to use if multiple are specified. Defaults to the first frame.
+    
+    Returns:
+        None: Writes the XYZ file.
+    """
+    
     with open(xyz_file, 'w') as f:
         f.write(str(len(coords[frame]))+'\n')
         f.write('Type name\t\t\tPosition X\t\t\tPosition Y\t\t\tPosition Z\n')
@@ -122,10 +184,19 @@ the simulation frame to use of multiple are specified. Defaults to the first fra
             f.write(line['atoms']+'\t\t\t\t'+'\t\t'.join(['{:.8e}'.format(float(x)) for x in line['coordinates']])+'\n')
 
 
-def read_trajectory(dcd_file, xyz_file, frame=None):
-    '''This function uses the mdtraj module to return the coordinates of a particular DCD file.
-A frame number can be specified. Whether to include the atoms labels can be specified.
-Note that this function is only compatible on unix systems due to the mdtraj module.'''
+def read_trajectory(dcd_file: str, xyz_file: str, frame: Optional[int] = None) -> np.ndarray:
+    """
+    Read coordinates from a DCD trajectory file and match them with atom labels from an XYZ file.
+
+    Parameters:
+        dcd_file (str): Path to the DCD file.
+        xyz_file (str): Path to the XYZ file containing atom labels.
+        frame (int, optional): The specific frame to return. If None, returns all frames.
+
+    Returns:
+        numpy.ndarray: A structured array of coordinates for the specified frame with fields 'atoms' and 'coordinates'.
+    """
+    
     import mdtraj.formats as md
     
     with md.DCDTrajectoryFile(dcd_file) as f:
@@ -142,13 +213,18 @@ Note that this function is only compatible on unix systems due to the mdtraj mod
         return coords
         
         
-def xyz_to_pdb(xyz_file, pdb_file):
-    '''This function is meant to update coordinates of a particular system from an XYZ file
-to a corresponding PDB file for the same system. It receives an XYZ file (xyz_file)
-containing the new coordinates and a PDB file (pdb_file) containing old coordinates to
-be updated, and returns a PDB file with the name of the one supplied prefixed by 'new_'.
-It assumes one is using only the record types 'ATOM' or 'HETATM' on the PDB file, but can
-be adjusted for other usages provided the string updated_atom is correctly modified.'''
+def xyz_to_pdb(xyz_file: str, pdb_file: str) -> None:
+    """
+    Update coordinates in a PDB file using new coordinates from an XYZ file.
+
+    Parameters:
+        xyz_file (str): Path to the XYZ file containing new coordinates.
+        pdb_file (str): Path to the PDB file with old coordinates.
+
+    Returns:
+        None: Writes a new PDB file with updated coordinates prefixed by 'new_'.
+    """
+    
     with open(xyz_file) as xyz:
         lines = xyz.readlines()
         xyz_list = [line.strip().split() for line in lines[2:]]
@@ -199,10 +275,21 @@ be adjusted for other usages provided the string updated_atom is correctly modif
 #TODO: Switch to new strucutred array method
 
 
-def xyz_to_input(xyz, input_file, charge=None, fixed=None, frame=0):
-    '''This function converts an xyz file to an MBN explorer input file. xyz can either be a filename or a list
-containing the atom type, and x, y, and z coordinates. Charge of the atom can be specified. This will be converted
-to a dictionary in the future.'''
+def xyz_to_input(xyz: Union[str, np.ndarray], input_file: str, charge: Optional[str] = None, fixed: Optional[Union[int, List[int]]] = None, frame: int = 0) -> None:
+    """
+    Convert an XYZ file to an MBN Explorer input file.
+
+    Parameters:
+        xyz (str or numpy.ndarray): Path to an XYZ file or a structured array of coordinates.
+        input_file (str): Path to the output MBN Explorer input file.
+        charge (str, optional): Charge of the atoms, if specified. Default is None.
+        fixed (int or list of int, optional): Index or indices of fixed blocks. Default is None.
+        frame (int, optional): The simulation frame to use if multiple are specified. Defaults to the first frame.
+
+    Returns:
+        None: Writes the input file for MBN Explorer.
+    """
+    
     if type(xyz) == str:
         coords = read_xyz(xyz)[0]
     elif type(xyz) == np.ndarray:
@@ -219,11 +306,34 @@ to a dictionary in the future.'''
 #TODO: Change fixed to be lists. First item is start index, second is end index. Also list of lists. Single length list corresponds to fixed block after given index to end of file
 
 
-def melting_temperature_calculation():
+def melting_temperature_calculation() -> None:
+    """
+    Placeholder function for melting temperature calculation.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def calculate_rdf(coordinates, step, r_max, frame=0, box_size=None, select_atoms=None):
+def calculate_rdf(coordinates: np.ndarray, step: float, r_max: float, frame: int = 0, box_size: Optional[np.ndarray] = None, select_atoms: Optional[str] = None) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate the radial distribution function (RDF) from coordinates.
+
+    Parameters:
+        coordinates (numpy.ndarray): A structured array of coordinates.
+        step (float): The width of the bins for RDF calculation.
+        r_max (float): The maximum distance for RDF calculation.
+        frame (int, optional): The simulation frame to use if specified. Defaults to the first frame.
+        box_size (numpy.ndarray, optional): Dimensions of the simulation box. If None, it will be calculated from coordinates.
+        select_atoms (str, optional): Atom type to select. Default is None.
+
+    Returns:
+        tuple: (r_values, rdf) where r_values is an array of bin centers and rdf is the radial distribution function.
+    """
+
+    from scipy.spatial import KDTree
     coordinates = coordinates[frame]
     if box_size is None:
         # Calculate box dimensions from given coors
@@ -271,25 +381,67 @@ def calculate_rdf(coordinates, step, r_max, frame=0, box_size=None, select_atoms
     return r_values, rdf
 
 
-def rmsd_analysis():
+def rmsd_analysis() -> None:
+    """
+    Placeholder function for RMSD (Root Mean Square Deviation) analysis.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def diffusion_analysis():
+def diffusion_analysis() -> None:
+    """
+    Placeholder function for diffusion analysis.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def kinetic_energy_distribution():
+def kinetic_energy_distribution() -> None:
+    """
+    Placeholder function for kinetic energy distribution analysis.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def temperatur_fluctuation_calculation():
+def temperatur_fluctuation_calculation() -> None:
+    """
+    Placeholder function for temperature fluctuation calculation.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def heat_capacity_calculation():
+def heat_capacity_calculation() -> None:
+    """
+    Placeholder function for heat capacity calculation.
+
+    Returns:
+        None
+    """
+    
     pass
 
 
-def spectral_statistics_analyser():
+def spectral_statistics_analyser() -> None:
+    """
+    Placeholder function for spectral statistics analysis.
+
+    Returns:
+        None
+    """
+    
     pass
