@@ -381,6 +381,60 @@ def calculate_rdf(coordinates: np.ndarray, step: float, r_max: float, frame: int
     return r_values, rdf
 
 
+def calculate_msd(structured_array, box_size, directions='xyz'):
+    """
+    Calculate the Mean Squared Displacement (MSD).
+    
+    Parameters:
+        structured_array (np.ndarray): A structured array of coordinates.
+        box_size (float or list): Size of the simulation box. A single float assumes a cubic box, 
+                                  and a list of three values specifies [Lx, Ly, Lz] for non-cubic boxes.
+        directions (str): Directions to include in the MSD calculation ('x', 'y', 'z', or combinations like 'xyz', 'xy', etc.).
+    
+    Returns:
+        np.ndarray: MSD values as a function of time.
+    """
+    # Extract coordinates
+    coordinates = structured_array['coordinates']  # Shape: (n_timesteps, n_atoms, 3)
+    n_timesteps, n_atoms, _ = coordinates.shape
+
+    # Handle box size
+    if isinstance(box_size, (int, float)):
+        box_size = np.array([box_size] * 3)  # Convert to cubic box
+    else:
+        box_size = np.array(box_size)  # Ensure array format
+
+    if box_size.shape != (3,):
+        raise ValueError("Box size must be a single value for cubic boxes or a list of three values for non-cubic boxes.")
+
+    # Calculate displacements
+    displacements = np.zeros_like(coordinates)
+    for t in range(1, n_timesteps):
+        step_displacement = coordinates[t] - coordinates[t - 1]
+        # Apply minimum image convention for PBC
+        step_displacement -= box_size * np.round(step_displacement / box_size)
+        displacements[t] = displacements[t - 1] + step_displacement
+
+    # Initial positions
+    initial_positions = displacements[0]  # Shape: (n_atoms, 3)
+
+    # Total displacements
+    total_displacements = displacements - initial_positions  # Shape: (n_timesteps, n_atoms, 3)
+
+    # Filter for specified directions
+    direction_indices = {'x': 0, 'y': 1, 'z': 2}
+    selected_indices = [direction_indices[dim] for dim in directions]
+    selected_displacements = total_displacements[..., selected_indices]  # Select desired dimensions
+
+    # Squared displacements
+    squared_displacements = np.sum(selected_displacements**2, axis=-1)  # Sum over selected dimensions
+
+    # Mean squared displacement (MSD) over all atoms
+    msd = np.mean(squared_displacements, axis=1)  # Average over particles
+
+    return msd
+
+
 def rmsd_analysis() -> None:
     """
     Placeholder function for RMSD (Root Mean Square Deviation) analysis.
