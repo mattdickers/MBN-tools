@@ -435,15 +435,27 @@ def calculate_msd(structured_array, box_size, directions='xyz'):
     return msd
 
 
-def rmsd_analysis() -> None:
+def calculate_rmsd(structured_array, box_size, directions='xyz'):
     """
-    Placeholder function for RMSD (Root Mean Square Deviation) analysis.
+    Calculate the Root Mean Squared Displacement (RMSD),
+    handling periodic boundary conditions (PBC).
+
+    Parameters:
+        structured_array (np.ndarray): A structured array of coordinates.
+        box_size (float or list): Size of the simulation box. A single float assumes a cubic box,
+                                  and a list of three values specifies [Lx, Ly, Lz] for non-cubic boxes.
+        directions (str): Directions to include in the displacement calculation ('x', 'y', 'z', or combinations like 'xyz', 'xy', etc.).
 
     Returns:
-        None
+        np.ndarray: RMSD values as a function of time.
     """
-    
-    pass
+    # Compute MSD first
+    msd = calculate_msd(structured_array, box_size, directions=directions)
+
+    # Compute RMSD
+    rmsd = np.sqrt(msd)
+
+    return rmsd
 
 
 def diffusion_analysis() -> None:
