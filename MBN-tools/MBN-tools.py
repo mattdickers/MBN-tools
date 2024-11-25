@@ -54,7 +54,7 @@ def create_structured_array(atoms: List[str], frames: Union[np.ndarray, List[np.
     return structured_array
 
 
-def run_MBN(task_file: str, MBN_path: str, show_output: bool = False) -> Tuple[str, str]:
+def run_task(task_file: str, MBN_path: str, show_output: bool = False) -> Tuple[str, str]:
     """
     Run an MBN Explorer simulation using a specified Task file and return the standard output and error.
 
