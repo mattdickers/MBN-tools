@@ -344,9 +344,9 @@ def calculate_rdf(coordinates: np.ndarray, step: float, r_max: float, frame: int
 
     if select_atoms:
         # Reduce coordinates to selection of atom types
-        coordinates = coordinates[np.where(coordinates['atoms'] == select_atoms)]
+        coordinates = coordinates[np.isin(coordinates['atoms'], select_atoms)]
         if len(coordinates) == 0:
-            raise ValueError('No atoms of the selected type.')
+            raise ValueError('No atoms of the selected type(s).')
 
     num_atoms = len(coordinates)
     num_bins = int(r_max / step)
