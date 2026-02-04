@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MBN_tools"
+version = "1.0.0"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.12",
+  "mdtraj",
+  "vispy"
+]
+authors = [{name = "Matthew Dickers", email = "mattdickers@gmail.com"}]
+description = "Useful tools for use with MBN Explorer simulations, files, and their analysis"
+keywords = [
+    "MBN Explorer",
+    "MBN Studio",
+    "Molecular Dynamics",
+    "MD",
+    "Data Analysis"
+]
+license = {file="LICENSE.txt"}
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+
+[project.urls]
+Homepage = "https://github.com/mattdickers/MBN-tools"
+Source = "https://github.com/mattdickers/MBN-tools"
