@@ -2,7 +2,6 @@ import pandas as pd
 import plotext as plt
 import subprocess
 from io import StringIO
-import time
 import os
 import argparse
 
@@ -95,7 +94,7 @@ while True:
 
     # Plot data
     fig.clear.data()
-    fig.plot_size(w, h - 1)
+    fig.plot_size(w, h-1)
 
     fig.theme(args.theme) 
 

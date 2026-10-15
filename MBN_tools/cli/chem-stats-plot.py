@@ -1,8 +1,6 @@
 import pandas as pd
 import plotext as plt
 import subprocess
-from io import StringIO
-import time
 import os
 import argparse
 
@@ -11,22 +9,22 @@ import argparse
 # -------------------------
 
 parser = argparse.ArgumentParser(
-    description="Live plot data from an MBN Explorer log file."
+    description="Live plot data from an MBN Explorer chemical statistics file."
 )
 
 parser.add_argument(
     "filename",
-    help="Path to the MBN Explorer .log file"
+    help="Path to the MBN Explorer .dat file"
 )
 
 parser.add_argument(
-    "--x",
+    "-x", "--x",
     default='Step',
     help="Column to use for the x-axis"
 )
 
 parser.add_argument(
-    "--y",
+    "-y", "--y",
     help="Column to use for the y-axis. If not specificed all columns will be plotted."
 )
 
@@ -78,7 +76,7 @@ while True:
 
         for i in range(1, len(cols), 2):
             particle_type = cols[i]
-            count = int(cols[i + 1])
+            count = int(cols[i+1])
             data[particle_type] = count
         rows.append(data)
 
@@ -89,7 +87,7 @@ while True:
 
     # Plot data
     fig.clear.data()
-    fig.plot_size(w, h - 1)
+    fig.plot_size(w, h-1)
 
     fig.theme(args.theme)
 
