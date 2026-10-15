@@ -27,8 +27,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--y",
-    required=True,
-    help="Column to use for the y-axis"
+    help="Column to use for the y-axis. If not specificed all columns will be plotted."
 )
 
 parser.add_argument(
@@ -85,31 +84,14 @@ while True:
 
     data = pd.DataFrame(rows)
 
-    # Check that requested columns exist
-    if not checked:
-        if args.x not in data.columns:
-            parser.error(
-                f"X column '{args.x}' not found. "
-                f"Available columns: {', '.join(data.columns)}"
-            )
-
-        if args.y not in data.columns:
-            parser.error(
-                f"Y column '{args.y}' not found. "
-                f"Available columns: {', '.join(data.columns)}"
-            )
-
-        checked = True
-
     # Set up data for plotting
     x = data[args.x]
-    y = data[args.y]
 
     # Plot data
     fig.clear.data()
     fig.plot_size(w, h - 1)
 
-    fig.theme(args.theme) 
+    fig.theme(args.theme)
 
     # Axes labels
     fig.title('Press q to exit')
@@ -117,7 +99,32 @@ while True:
     fig.label(args.y, axis=1)
 
     fig.ruler("both", "both").grid(True)
-    fig.draw(fig.signal(x, y).lines())
+
+    if args.y:
+        # Check that requested columns exist
+        if not checked:
+            if args.x not in data.columns:
+                parser.error(
+                    f"X column '{args.x}' not found. "
+                    f"Available columns: {', '.join(data.columns)}"
+                )
+
+            if args.y not in data.columns:
+                parser.error(
+                    f"Y column '{args.y}' not found. "
+                    f"Available columns: {', '.join(data.columns)}"
+                )
+
+            checked = True
+        
+        y = data[args.y]
+        fig.draw(fig.signal(x, y, marker='braille').lines())
+    else:
+        for column in data.columns:
+            if column == 'Step':
+                continue
+            fig.draw(fig.signal(x, data[column], marker='braille').lines().label(column))
+
     fig.show(flush=True)
 
     if plt.terminal.is_pressed('q'):

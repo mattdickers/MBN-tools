@@ -105,7 +105,7 @@ while True:
     fig.label(args.y, axis=1)
 
     fig.ruler("both", "both").grid(True)
-    fig.draw(fig.signal(x, y).lines())
+    fig.draw(fig.signal(x, y, marker='braille').lines())
     fig.show(flush=True)
 
     if plt.terminal.is_pressed('q'):
