@@ -48,6 +48,8 @@ canvas = visualise.create_canvas()
 visualise.draw_atoms(xyz_data['coordinates'], parent=canvas.central_widget.add_view())
 ```
 
+Full information on the available features and functions can be found in the [MBN-tools Documentation](https://mbn-tools.readthedocs.io/en/latest/index.html)
+
 ## Dependencies
 
 - `numpy >= 1.26`

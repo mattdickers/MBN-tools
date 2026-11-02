@@ -49,12 +49,6 @@ Basic usage
    # Create a visualisation
    canvas = visualise.create_canvas()
 
-API Reference
--------------
-
-The following sections contain automatically generated documentation
-from the MBN-tools Python modules.
-
 .. toctree::
    :maxdepth: 2
    :caption: API Reference

@@ -7,8 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'MBN-tools'
-copyright = '2026, Matthew Dickers'
-author = 'Matthew Dickers'
+copyright = '2026, The MBN-tools Developers'
 release = '1.0'
 
 # -- General configuration ---------------------------------------------------
